@@ -22,10 +22,12 @@ class Component {
     this.insertBefore = insertBefore;
   }
   detach() {
-    // if (this.elements) {
+
+      // Be sure the lement exist to delete
+    if (this.element) {
       this.element.remove();
       // this.element.parentChild.removeChild(this.element)
-    // }
+    }
   }
   attach() {
     // document.body.append(this.element);
