@@ -90,6 +90,14 @@ button:active {
   padding: 1rem;
   background: white;
 }
+.droppable {
+
+  background: #5e3545;
+}
+.droppover {
+
+  background: white;
+}
 
 #active-projects {
   border: 1px solid #870099;

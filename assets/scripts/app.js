@@ -9,6 +9,9 @@ class DOMHelper {
     const destinationElement = document.querySelector(newDestinationSelector);
     // When append element which already part of the DOM, will not be copied but moved
     destinationElement.append(element);
+    // Not all browsers support the behavior like explorer,Saffari
+    element.scrollIntoView({ behavior: "smooth" });
+    // can use sctollTo() || scrollBy too to scroll for maintaining dimension and behavior can be too
   }
 }
 
@@ -22,8 +25,7 @@ class Component {
     this.insertBefore = insertBefore;
   }
   detach() {
-
-      // Be sure the lement exist to delete
+    // Be sure the lement exist to delete
     if (this.element) {
       this.element.remove();
       // this.element.parentChild.removeChild(this.element)
@@ -39,11 +41,12 @@ class Component {
 }
 
 class Tooltip extends Component {
-  constructor(closeNotifierFunction) {
-// Control the position of the text
-    super("active-projects",true);
-    // super();
+  constructor(closeNotifierFunction, text, hostElementId) {
+    // Control the position of the text
+    // super("active-projects", true);
+    super(hostElementId);
     this.closeNotifier = closeNotifierFunction;
+    this.text = text;
     this.create();
   }
   closedTooltip = () => {
@@ -53,8 +56,32 @@ class Tooltip extends Component {
   create() {
     const toolTipElement = document.createElement("div");
     toolTipElement.className = "card";
-    toolTipElement.textContent = "Beko";
+    //For easy contents
+    // // toolTipElement.textContent = this.text;
+    //  toolTipElement.innerHTML = `<h2> More Info </h2>
+    // <p> ${this.text}</p> `;
+
+    // For complecated constents
+    const toolTipTemplate = document.getElementById("tooltip");
+    const toolTipBody = document.importNode(toolTipTemplate.content, true);
+    toolTipBody.querySelector("p").textContent = this.text;
+    toolTipElement.append(toolTipBody);
     // toolTipElement.addEventListener('click',this.detach.bind(this))
+
+    // Cart position / Dimension
+    console.log(this.hostElement.getBoundingClientRect());
+    const hostElPosLeft = this.hostElement.offsetLeft;
+    const hostElPosRight = this.hostElement.offsetRight;
+    const hostElPosTop = this.hostElement.offsetTop;
+    const hostElPosHeight = this.hostElement.offsetHeight;
+    const parentElementScrolling = this.hostElement.parentElement.scrollTop;
+
+    const x = hostElPosLeft + 20;
+    const y = hostElPosTop + hostElPosHeight - parentElementScrolling - 10;
+    toolTipElement.style.position = "absolute";
+    toolTipElement.style.left = x + "px";
+    toolTipElement.style.top = y + "px";
+
     toolTipElement.addEventListener("click", this.closedTooltip);
     this.element = toolTipElement;
   }
@@ -66,22 +93,44 @@ class projectItem {
     this.updateProjectListHandler = updateProjectListFunction;
     this.connectMoreInfoNutton();
     this.connectSwitchButton(type);
+    this.connectDrag();
   }
 
   showMoreInfoHanlder() {
     if (this.hasActiveTooltip) {
       return;
     }
-    const tooltip = new Tooltip(() => {
-      this.hasActiveTooltip = false;
-    });
+    const projectElement = document.getElementById(this.id);
+    const tooltipText = projectElement.dataset.extraInfo;
+    const tooltip = new Tooltip(
+      () => {
+        this.hasActiveTooltip = false;
+      },
+      tooltipText,
+      this.id
+    );
     tooltip.attach();
     this.hasActiveTooltip = true;
   }
+  connectDrag() {
+    const item = document.getElementById(this.id);
+    item.addEventListener("dragstart", (event) => {
+      event.dataTransfer.setData("text/plain", this.id);
+      event.dataTransfer.effectAllowed = "move";
+    });
+
+    // Not for use but for learn
+    item.addEventListener("dragend", (event) => {
+      // Here can update the UI or move the Data arround
+      console.log(event);
+    });
+  }
+
   connectMoreInfoNutton() {
+    const item = document.getElementById(this.id);
     const projectItemElement = document.getElementById(this.id);
     let moreInfoBtn = projectItemElement.querySelector("button:first-of-type");
-    moreInfoBtn.addEventListener("click", this.showMoreInfoHanlder);
+    moreInfoBtn.addEventListener("click", this.showMoreInfoHanlder.bind(this));
   }
   connectSwitchButton(type) {
     const projectItemElement = document.getElementById(this.id);
@@ -106,6 +155,7 @@ class projectList {
   projects = [];
   constructor(type) {
     this.type = type;
+    this.connectDroppable();
 
     const prjItems = document.querySelectorAll(`#${type}-projects li`);
     for (const prjItem of prjItems) {
@@ -114,6 +164,40 @@ class projectList {
       );
     }
     console.log(this.projects);
+  }
+  connectDroppable() {
+    const list = document.querySelector(`#${this.type}-projects ul`);
+    list.addEventListener("dragenter", (event) => {
+      if (event.dataTransfer.types[0] === "text/plain") {
+        list.parentElement.classList.add("droppable");
+        event.preventDefault();
+      }
+    });
+    list.addEventListener("dragover", (event) => {
+      if (event.dataTransfer.types[0] === "text/plain") {
+        event.preventDefault();
+        // list.parentElement.classList.add("droppover");
+      }
+    });
+    list.addEventListener("dragleave", (event) => {
+      if (event.relatedTarget.closest(`#${this.type}-projects ul`) !== list) {
+        list.parentElement.classList.remove("droppable");
+      }
+    });
+    list.addEventListener("drop", (event) => {
+      const prjId = event.dataTransfer.getData("text/plain");
+
+      // Check the prjects list where the draged project part from
+      if (this.projects.find((p) => p.id === prjId)) {
+        return;
+      }
+      document
+        .getElementById(prjId)
+        .querySelector("button:last-of-type")
+        .click();
+      list.parentElement.classList.remove("droppable");
+      event.preventDefault(); // not require but help in case the project will contain more dragable elements
+    });
   }
   setSwitchHandlerFunction(switchHandlerFunction) {
     this.switchHandler = switchHandlerFunction;
@@ -149,6 +233,21 @@ class App {
     finishedProjectsList.setSwitchHandlerFunction(
       activeProjectsList.addProject.bind(activeProjectsList)
     );
+    // Timer
+    // const TimerId = setTimeout(this.startAnalytics, 3000); // 3000ms = 3 Seconds
+    // document
+    //   .getElementById("stop-analytics-button")
+    //   .addEventListener("click", () => {
+
+    //       // Stop the timer npt the interval in the analytics.js file
+    //     clearTimeout(TimerId);
+    //   });
+  }
+  static startAnalytics() {
+    const analyticsScript = document.createElement("script");
+    analyticsScript.src = " assets/scripts/analytics.js";
+    analyticsScript.defer = true;
+    document.head.append(analyticsScript);
   }
 }
 App.init();
