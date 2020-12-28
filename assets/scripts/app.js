@@ -1,7 +1,10 @@
+import {ProjectList } from './App/ProjectList.js'
+
+
 class App {
   static init() {
-    const activeProjectsList = new projectList("active");
-    const finishedProjectsList = new projectList("finished");
+    const activeProjectsList = new ProjectList("active");
+    const finishedProjectsList = new ProjectList("finished");
     activeProjectsList.setSwitchHandlerFunction(
       // binding will help to not refer to the wrong instance
       finishedProjectsList.addProject.bind(finishedProjectsList)

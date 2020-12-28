@@ -1,0 +1,19 @@
+{
+  "name": "project_planner_project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BakrAlqassab/Project_Planner_Project.git"
+  },
+  "author": "Bakr Al-Qassab",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BakrAlqassab/Project_Planner_Project/issues"
+  },
+  "homepage": "https://github.com/BakrAlqassab/Project_Planner_Project#readme"
+}
